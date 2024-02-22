@@ -31,7 +31,7 @@ class BaseTokenizer:
         return 2
     
     def __repr__(self):
-        return "<{} vocab_size={}>".format(type(self).__name__, self.vocab_size)
+        return "<{} vocab_size={} token_type={}>".format(type(self).__name__, self.vocab_size, self.token_type)
 
 class Tokenizer(BaseTokenizer):
     def __init__(self, model_type: str):
