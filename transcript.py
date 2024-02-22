@@ -36,7 +36,7 @@ Processing train-other-500...
 """
 
 # note our text data is three file
-# - train/transcript.txt is about 47GB
-# - dev/transcript.txt is about 547MB
-# - test/transcript.txt is about 546MB
+# - train/transcript.txt is about 47MB
+# - dev/transcript.txt is about 547KB
+# - test/transcript.txt is about 546KB
 # we will use the test data to train the lm model

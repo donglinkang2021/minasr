@@ -1,2 +1,4 @@
 .hypothesis
 *_pycache_*
+checkpoints
+logs
