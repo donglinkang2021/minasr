@@ -6,15 +6,15 @@ from pathlib import Path
 SPLITS = [
     # "dev-clean",  
     # "dev-other", 
-    # "test-clean", 
-    # "test-other", 
-    "train-clean-100", 
-    "train-clean-360", 
-    "train-other-500",
+    "test-clean", 
+    "test-other", 
+    # "train-clean-100", 
+    # "train-clean-360", 
+    # "train-other-500",
 ]
 
 LS_ROOT = "/opt/data/private/linkdom/data/"
-out_root = "/opt/data/private/linkdom/data/libritext"
+out_root = "/opt/data/private/linkdom/data/libritext/test"
 out_root = Path(out_root).absolute()
 transcript_file = out_root / "transcript.txt"
 
@@ -34,3 +34,9 @@ Processing train-clean-360...
 Processing train-other-500...
 100%|██████████| 148688/148688 [1:03:33<00:00, 38.99it/s]
 """
+
+# note our text data is three file
+# - train/transcript.txt is about 47GB
+# - dev/transcript.txt is about 547MB
+# - test/transcript.txt is about 546MB
+# we will use the test data to train the lm model
