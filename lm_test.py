@@ -20,7 +20,7 @@ model.load_state_dict(torch.load("checkpoints/best_bpe_gpt.pth"))
 
 # sample config
 sample_kwargs = {
-    "max_new_tokens": 200, # max number of tokens to generate
+    "max_new_tokens": 500, # max number of tokens to generate
     "temperature": 0.8, # > 1.0 = more exploratory, < 1.0 = more conservative
     "top_k": 200 # consider only the top_k most likely tokens, clamp others to have 0 probability
 }

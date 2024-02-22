@@ -20,18 +20,18 @@ gpt_kwargs = {
 }
 
 # train config
-num_epochs = 10
+num_epochs = 20
 eval_interval = 500
 eval_iters = 200
-save_begin = 20000
+save_begin = 500
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_name = f"{vocab_type}_gpt"
 
 loader_kwargs = {
     "tokenizer": tokenizer,
-    "batch_size": 64,
-    "num_workers": 2
+    "batch_size": 128,
+    "num_workers": 4
 }
 
 # sample config
