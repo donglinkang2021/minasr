@@ -1,0 +1,3 @@
+- [x] gen `torchaudio.datasets.LIBRISPEECH` transcript of training set
+- [] build a vocab
+- [] try to train a lm with the transcript
