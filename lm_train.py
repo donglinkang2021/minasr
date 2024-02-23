@@ -30,7 +30,7 @@ model_name = f"{vocab_type}_gpt"
 
 loader_kwargs = {
     "tokenizer": tokenizer,
-    "batch_size": 128,
+    "batch_size": 64,
     "num_workers": 4
 }
 
@@ -95,6 +95,5 @@ for epoch in range(num_epochs):
         pbar.update(1)
 pbar.close()
 
-text = "hello"
-context = torch.tensor(tokenizer.encode(text), dtype=torch.long, device=device).unsqueeze(0)
+context = torch.tensor([tokenizer.spm.bos_id()], dtype=torch.long, device=device).unsqueeze(0)
 print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))
