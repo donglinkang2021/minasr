@@ -29,6 +29,10 @@ print(f"Decoded text: {decoded_text}")
 vocab_size = sp.get_piece_size()
 print(f"Vocabulary size: {vocab_size}")
 
+print(f"bos_token_id: {sp.bos_id()}")
+print(f"eos_token_id: {sp.eos_id()}")
+print(f"unk_token_id: {sp.unk_id()}")
+
 # Get the list of the vocabulary
 # vocab_list = [sp.id_to_piece(i) for i in range(vocab_size)]
 # print(vocab_list)
@@ -39,4 +43,7 @@ Encoded text ids   : [[3, 10, 4, 14, 14, 7, 3, 18, 7, 12, 14, 13], [3, 5, 10, 9,
 Encoded text pieces: [['▁', 'h', 'e', 'l', 'l', 'o', '▁', 'w', 'o', 'r', 'l', 'd'], ['▁', 't', 'h', 'i', 's', '▁', 'i', 's', '▁', 'a', '▁', 't', 'e', 's', 't']]
 Decoded text: ['hello world', 'this is a test']
 Vocabulary size: 30
+bos_token_id: -1
+eos_token_id: 1
+unk_token_id: 2
 """

@@ -54,7 +54,8 @@ class Tokenizer(BaseTokenizer):
         """
 
     def encode(self, s):
-        return self.spm.encode_as_ids(s)
+        # add bos and eos tokens
+        return [self.spm.bos_id()] + self.spm.encode_as_ids(s) + [self.spm.eos_id()]
 
     def decode(self, idxs):
         return self.spm.decode_ids(idxs)
