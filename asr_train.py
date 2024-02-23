@@ -13,24 +13,26 @@ tokenizer = Tokenizer(vocab_type)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(1337)
 
+model_dim = 384
+
 features_kwargs = {
-    "demo0": [80, "M", 128, "M", 256, 256, "M", 384, "M"]
+    "demo0": [80, "M", 128, "M", 256, "M", model_dim, "M"]
 }
 
 conformer_kwargs = {
-    "input_dim": 384,
-    "num_heads": 4,
+    "input_dim": model_dim,
+    "num_heads": 6,
     "ffn_dim": 128,
-    "num_layers": 6,
+    "num_layers": 4,
     "depthwise_conv_kernel_size": 31,
     "dropout": 0.2,
 }
 
 gpt_kwargs = {
     "vocab_size": tokenizer.vocab_size,
-    "n_embd": 384,
+    "n_embd": model_dim,
     "n_head": 6,
-    "n_layer": 6,
+    "n_layer": 8,
     "block_size": 512,
     "dropout": 0.2
 }
@@ -39,7 +41,7 @@ model_cfg = {
     "features_cfg": features_kwargs["demo0"],
     "conformer_kwargs": conformer_kwargs,
     "gpt_kwargs": gpt_kwargs,
-    "is_lm_pretrained": True
+    "is_lm_pretrained": False
 }
 
 # sample config
@@ -54,13 +56,12 @@ num_epochs = 20
 eval_interval = 500
 eval_iters = 200
 save_begin = 1000
-learning_rate = 3e-3
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_name = f"{vocab_type}_vgg1d_conformer_bigram"
 
 model = NOCTCModel(**model_cfg)
 model.to(device)
-model.freeze_lm()
 train_loader = get_loader("train-clean-100", tokenizer, 4, 32)
 val_loader = get_loader("dev-clean", tokenizer, 4, 32)
 test_loader = get_loader("test-clean", tokenizer, 4, 32)
@@ -133,27 +134,15 @@ for epoch in range(num_epochs):
         pbar.update(1)
 pbar.close()
 
-"""
-(GPT) root@asr:~/minasr# python dev.py
-number of parameters: 11.409640 M 
-number of parameters: 20.188120 M 
-Training ASR:   0%|                                                     | 0/8920 [00:00<?, ?batch/s]--- step 0: val_loss: 7.4000 test_loss: 7.3844  ---
-loss: 2.8292:   6%|██▍                                        | 499/8920 [01:47<28:33,  4.91batch/s]--- step 500: val_loss: 1.4237 test_loss: 1.3708  ---
-loss: 2.5109:  11%|████▊                                      | 999/8920 [03:39<23:45,  5.56batch/s]--- step 1000: val_loss: 1.3364 test_loss: 1.3139  ---
-loss: 2.6908:  17%|███████                                   | 1499/8920 [05:33<23:01,  5.37batch/s]--- step 1500: val_loss: 1.2951 test_loss: 1.2749  ---
-loss: 2.3490:  22%|█████████▍                                | 2000/8920 [07:40<17:29,  6.60batch/s]--- step 2000: val_loss: 1.3089 test_loss: 1.2814  ---
-loss: 2.2990:  28%|███████████▊                              | 2500/8920 [09:18<21:55,  4.88batch/s]--- step 2500: val_loss: 1.2952 test_loss: 1.2528  ---
-loss: 2.4389:  34%|██████████████                            | 2999/8920 [11:05<19:44,  5.00batch/s]--- step 3000: val_loss: 1.2653 test_loss: 1.2603  ---
-loss: 2.5782:  39%|████████████████▍                         | 3500/8920 [13:10<13:44,  6.57batch/s]--- step 3500: val_loss: 1.2409 test_loss: 1.2339  ---
-loss: 2.1946:  45%|██████████████████▊                       | 3999/8920 [14:52<14:53,  5.51batch/s]--- step 4000: val_loss: 1.2441 test_loss: 1.2075  ---
-loss: 2.2219:  50%|█████████████████████▏                    | 4500/8920 [17:00<10:07,  7.27batch/s]--- step 4500: val_loss: 1.2573 test_loss: 1.1906  ---
-loss: 2.1994:  56%|███████████████████████▌                  | 5000/8920 [18:39<14:41,  4.45batch/s]--- step 5000: val_loss: 1.2183 test_loss: 1.1743  ---
-loss: 2.2461:  62%|█████████████████████████▉                | 5499/8920 [20:34<10:49,  5.26batch/s]--- step 5500: val_loss: 1.1918 test_loss: 1.1445  ---
-loss: 2.1137:  67%|████████████████████████████▏             | 5999/8920 [22:24<09:44,  5.00batch/s]--- step 6000: val_loss: 1.1896 test_loss: 1.1639  ---
-loss: 2.0682:  73%|██████████████████████████████▌           | 6500/8920 [24:30<05:57,  6.78batch/s]--- step 6500: val_loss: 1.1832 test_loss: 1.1535  ---
-loss: 2.1188:  78%|████████████████████████████████▉         | 7000/8920 [26:11<07:27,  4.29batch/s]--- step 7000: val_loss: 1.1468 test_loss: 1.0876  ---
-loss: 2.1716:  84%|███████████████████████████████████▎      | 7500/8920 [28:20<03:36,  6.55batch/s]--- step 7500: val_loss: 1.1230 test_loss: 1.0849  ---
-loss: 2.0146:  90%|█████████████████████████████████████▋    | 8000/8920 [30:20<02:16,  6.75batch/s]--- step 8000: val_loss: 1.0991 test_loss: 1.0778  ---
-loss: 1.9969:  95%|████████████████████████████████████████  | 8499/8920 [32:07<01:28,  4.76batch/s]--- step 8500: val_loss: 1.0613 test_loss: 1.0696  ---
-loss: 2.3871: 100%|█████████████████████████████████████████▉| 8919/8920 [33:52<00:00,  4.70batch/s]--- step 8919: val_loss: 1.0739 test_loss: 1.0487  ---
+"""emm maybe good?
+--- step 17500: val_loss: 0.7125 val_wer: 0.7892 test_loss: 0.7349 test_wer: 0.7890  ---
+loss: 1.3168: 100%|█████████████████████████████████████▉| 17839/17840 [1:08:36<00:00,  7.40batch/s]
+val_wer: 0.7658862876254181                                                                         
+utterances[0]: good by dear randal
+transcipts[0]: good five dearre rample
+loss: 1.3168: 100%|█████████████████████████████████████▉| 17839/17840 [1:08:50<00:00,  7.40batch/s]
+test_wer: 0.7766143106457243                                                                        
+utterances[0]: but i didn't know you've only to tell me now
+transcipts[0]: i didt know you only tell me now you want
+--- step 17839: val_loss: 0.6958 val_wer: 0.7659 test_loss: 0.7161 test_wer: 0.7766  ---
 """
