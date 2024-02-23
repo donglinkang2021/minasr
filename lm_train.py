@@ -30,7 +30,7 @@ model_name = f"{vocab_type}_gpt"
 
 loader_kwargs = {
     "tokenizer": tokenizer,
-    "batch_size": 64,
+    "batch_size": 128,
     "num_workers": 4
 }
 

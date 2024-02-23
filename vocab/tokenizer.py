@@ -30,6 +30,10 @@ class BaseTokenizer:
     def unk_idx(self):
         return 2
     
+    @property
+    def bos_idx(self):
+        return 3
+    
     def __repr__(self):
         return "<{} vocab_size={} token_type={}>".format(type(self).__name__, self.vocab_size, self.token_type)
 
@@ -50,12 +54,12 @@ class Tokenizer(BaseTokenizer):
         self.spm.load(f'{VOCAB_PREFIX}_{model_type}.model')
         """
         Please train with the following settings:
-        --pad_id=0 --eos_id=1 --unk_id=2 --bos_id=-1 --eos_piece=<eos>
+        --pad_id=0 --eos_id=1 --unk_id=2 --bos_id=3 --eos_piece=<eos>
         """
 
     def encode(self, s):
         # add bos and eos tokens
-        return [self.spm.bos_id()] + self.spm.encode_as_ids(s) + [self.spm.eos_id()]
+        return [self.bos_idx] + self.spm.encode_as_ids(s) + [self.eos_idx]
 
     def decode(self, idxs):
         return self.spm.decode_ids(idxs)

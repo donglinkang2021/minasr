@@ -26,7 +26,11 @@ sample_kwargs = {
 }
 
 # generate from the model
-# context = torch.zeros((1, 1), dtype=torch.long, device=device)
-text = "hello"
-context = torch.tensor(tokenizer.encode(text), dtype=torch.long, device=device).unsqueeze(0)
+# just gen from bos token
+# context = torch.tensor([tokenizer.spm.bos_id()], dtype=torch.long, device=device).unsqueeze(0)
+# print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))
+
+# gen from a prompt
+text = "how old"
+context = torch.tensor(tokenizer.encode(text)[:-1], dtype=torch.long, device=device).unsqueeze(0)
 print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))
