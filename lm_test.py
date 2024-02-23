@@ -1,6 +1,7 @@
 import torch
 from lm.model import GPT
 from vocab.tokenizer import Tokenizer
+from einops import repeat
 
 tokenizer = Tokenizer('bpe')
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -30,7 +31,12 @@ sample_kwargs = {
 # context = torch.tensor([tokenizer.spm.bos_id()], dtype=torch.long, device=device).unsqueeze(0)
 # print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))
 
+# gen a batch of tokens
+context = torch.tensor([tokenizer.spm.bos_id()], dtype=torch.long, device=device)
+context = repeat(context, 'n -> b n', b=5)
+print(tokenizer.decode(model.generate(context, **sample_kwargs).tolist()))
+
 # gen from a prompt
-text = "how old"
-context = torch.tensor(tokenizer.encode(text)[:-1], dtype=torch.long, device=device).unsqueeze(0)
-print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))
+# text = "how old"
+# context = torch.tensor(tokenizer.encode(text)[:-1], dtype=torch.long, device=device).unsqueeze(0)
+# print(tokenizer.decode(model.generate(context, **sample_kwargs)[0].tolist()))

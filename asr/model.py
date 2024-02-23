@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 from torchaudio.models import Conformer
 import torchvision.models as models
 from lm.model import GPT
@@ -74,10 +75,14 @@ class NOCTCModel(ASRModel):
         self.apply(self._init_weights)
         if is_lm_pretrained:
             self.load_lm()
-        print(f"number of parameters: {self.get_num_params()/1e6:.6f} M ")
+        print(f"number of parameters of asr model: {self.get_num_params()/1e6:.6f} M ")
 
     def load_lm(self):
         self.lm.load_state_dict(torch.load("checkpoints/best_bpe_gpt.pth"))
+
+    def freeze_lm(self):
+        for param in self.lm.parameters():
+            param.requires_grad = False
 
     def lm_forward(self, idx):
         device = idx.device
@@ -122,3 +127,23 @@ class NOCTCModel(ASRModel):
         y = self.lm.lm_head(y) # BxT2xV
         return y
     
+    def transcribe(self, x, x_lengths, idx, max_new_tokens, temperature=1.0, top_k=None):
+        # idx is (B, T) array of indices in the current context
+        for _ in range(max_new_tokens):
+            # crop idx to the last block_size tokens
+            idx_cond = idx[:, -self.lm.block_size:]
+            # get the predictions
+            logits = self(x, x_lengths, idx_cond)
+            # pluck the logits at the final step and scale by desired temperature
+            logits = logits[:, -1, :] / temperature
+            # optionally crop the logits to only the top k options
+            if top_k is not None:
+                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+                logits[logits < v[:, [-1]]] = -float('Inf')
+            # apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1) # (B, C)
+            # sample from the distribution
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            # append sampled index to the running sequence
+            idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
+        return idx

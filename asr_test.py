@@ -61,7 +61,6 @@ model_name = f"{vocab_type}_vgg1d_conformer_bigram"
 model = NOCTCModel(**model_cfg)
 model.to(device)
 model.load_state_dict(torch.load(f'checkpoints/best_{model_name}.pth'))
-train_loader = get_loader("train-clean-100", tokenizer, 4, 32)
 val_loader = get_loader("dev-clean", tokenizer, 4, 32)
 test_loader = get_loader("test-clean", tokenizer, 4, 32)
 
@@ -85,18 +84,13 @@ def estimate():
             loss = F.cross_entropy(logits, targets)
             losses.append(loss.item())
 
-            # calculate wer of a batch
+            # calculate wer
             B = x.size(0)
             context = torch.tensor([tokenizer.spm.bos_id()], dtype=torch.long, device=device)
             context = repeat(context, 'n -> b n', b=B)
             transcipts = tokenizer.decode(model.transcribe(x, lx, context, **sample_kwargs).tolist())
             utterances = tokenizer.decode(y.tolist())
             wer_scores.append(wer(utterances, transcipts))
-            # print(utterances[0], transcipts[0], wer_scores[-1])
-            print("\nutterances:", utterances[0])
-            print("transcipts:", transcipts[0])
-            print("wer_scores:", wer_scores)
-            break
 
         metrics[split + '_loss'] = np.mean(losses)
         metrics[split + '_wer'] = np.mean(wer_scores)
@@ -106,7 +100,7 @@ def estimate():
 
 
 metrics = estimate()
-# print(f"--- eval:", end=' ')
-# for k, v in metrics.items():
-#     print(f"{k}: {v:.4f}", end=' ')
-# print(" ---")
+print(f"--- eval:", end=' ')
+for k, v in metrics.items():
+    print(f"{k}: {v:.4f}", end=' ')
+print(" ---")
