@@ -1,5 +1,7 @@
 - [x] gen `torchaudio.datasets.LIBRISPEECH` transcript of training set
 - [x] build a vocab
 - [x] try to train a lm with the transcript
-- [x] train asr model with just 100h
-- [ ] train with more LIBRISPEECH data
+- [x] train asr model with just 100h 20epoch 2times
+- [x] train with more LIBRISPEECH data
+    - [x] train with 360h 20 epochs 2 times
+- [ ] try wav2vec 2.0 pretrain-finetune architecture
