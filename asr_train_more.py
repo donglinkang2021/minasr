@@ -67,9 +67,9 @@ print(f"the model checkpoints will be saved at {model_ckpts}.")
 
 model = NOCTCModel(**model_cfg)
 model.to(device)
-prev_ckpt = 'checkpoints/bpe_vgg1d_conformer_bigram/2024-02-23_22:37:56/best_bpe_vgg1d_conformer_bigram.pth'
+prev_ckpt = 'checkpoints/bpe_vgg1d_conformer_bigram/2024-02-24_11:05:53/best_bpe_vgg1d_conformer_bigram.pth'
 model.load_state_dict(torch.load(prev_ckpt))
-train_loader = get_loader("train-clean-360", tokenizer, 4, 32)
+train_loader = get_loader("train-other-500", tokenizer, 4, 32)
 val_loader = get_loader("dev-clean", tokenizer, 4, 32)
 test_loader = get_loader("test-clean", tokenizer, 4, 32)
 
