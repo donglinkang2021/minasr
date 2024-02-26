@@ -13,24 +13,26 @@ tokenizer = Tokenizer(vocab_type)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(1337)
 
+model_dim = 384
+
 features_kwargs = {
-    "demo0": [80, "M", 128, "M", 256, 256, "M", 384, "M"]
+    "demo0": [80, "M", 128, "M", 256, "M", model_dim, "M"]
 }
 
 conformer_kwargs = {
-    "input_dim": 384,
-    "num_heads": 4,
+    "input_dim": model_dim,
+    "num_heads": 6,
     "ffn_dim": 128,
-    "num_layers": 6,
+    "num_layers": 4,
     "depthwise_conv_kernel_size": 31,
     "dropout": 0.2,
 }
 
 gpt_kwargs = {
     "vocab_size": tokenizer.vocab_size,
-    "n_embd": 384,
+    "n_embd": model_dim,
     "n_head": 6,
-    "n_layer": 6,
+    "n_layer": 8,
     "block_size": 512,
     "dropout": 0.2
 }
@@ -39,8 +41,9 @@ model_cfg = {
     "features_cfg": features_kwargs["demo0"],
     "conformer_kwargs": conformer_kwargs,
     "gpt_kwargs": gpt_kwargs,
-    "is_lm_pretrained": True
+    "is_lm_pretrained": False
 }
+
 
 # sample config
 sample_kwargs = {
@@ -60,7 +63,8 @@ model_name = f"{vocab_type}_vgg1d_conformer_bigram"
 
 model = NOCTCModel(**model_cfg)
 model.to(device)
-model.load_state_dict(torch.load(f'checkpoints/best_{model_name}.pth'))
+prev_ckpt = 'checkpoints/bpe_vgg1d_conformer_bigram/2024-02-25_22:50:35/best_bpe_vgg1d_conformer_bigram.pth'
+model.load_state_dict(torch.load(prev_ckpt))
 val_loader = get_loader("dev-clean", tokenizer, 4, 32)
 test_loader = get_loader("test-clean", tokenizer, 4, 32)
 
@@ -104,3 +108,10 @@ print(f"--- eval:", end=' ')
 for k, v in metrics.items():
     print(f"{k}: {v:.4f}", end=' ')
 print(" ---")
+
+"""output
+(GPT) root@asr:~/minasr# python asr_test.py 
+number of parameters of lm: 14.956264 M 
+number of parameters of asr model: 21.038552 M 
+--- eval: val_loss: 0.2518 val_wer: 0.3357 test_loss: 0.2708 test_wer: 0.3379  ---   
+"""
