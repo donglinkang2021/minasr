@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from torchaudio.models import Conformer
 from typing import List
 
 class BaseModel(nn.Module):
@@ -55,3 +56,16 @@ class FeatureExtractor(nn.Module):
                 layers.append(nn.ReLU(inplace=True))
                 in_channels = layer_type
         return nn.Sequential(*layers)
+
+class Wav2Vec(BaseModel):
+    def __init__(self, model_dim, features_cfg: List, conformer_kwargs: dict):
+        super().__init__()
+        self.feature_extractor = FeatureExtractor(features_cfg)
+        self.conformer = Conformer(**conformer_kwargs)
+        # self.apply(self._init_weights)
+        print(f"number of parameters of asr model: {self.get_num_params()/1e6:.6f} M ")
+    
+    def forward(self, x, x_lengths):
+        x, x_lengths = self.feature_extractor(x, x_lengths)
+        x, x_lengths = self.conformer(x, x_lengths)
+        return x, x_lengths

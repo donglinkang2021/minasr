@@ -57,7 +57,6 @@ sample_kwargs = {
 # train config
 num_epochs = 20
 eval_interval = 500
-eval_iters = 200
 save_begin = 1000
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
