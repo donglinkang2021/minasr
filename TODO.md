@@ -4,4 +4,5 @@
 - [x] train asr model with just 100h 20epoch 2times
 - [x] train with more LIBRISPEECH data
     - [x] train with 360h 20 epochs 2 times
-- [ ] try wav2vec 2.0 pretrain-finetune architecture
+- [x] try wav2vec 2.0 pretrain-finetune architecture
+- [x] refer to simple_kmeans and extract the feature and label first
