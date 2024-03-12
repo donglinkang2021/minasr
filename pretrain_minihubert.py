@@ -89,13 +89,13 @@ best_loss = 100
 n_batches = len(trainloader)
 print(f"number of batches per epoch: {n_batches}")
 print(f"train loader kwargs: {loader_kwargs}")
-pbar = tqdm(total=num_epochs * n_batches, desc="model pretraining", leave=True, ncols = 200, unit="batch")
+pbar = tqdm(total=num_epochs * n_batches, desc="model pretraining", leave=True, unit="batch")
 for epoch in range(num_epochs):
     for i, (x, _, lx, _) in enumerate(trainloader):
         iter = epoch * n_batches + i
         if iter % eval_interval == 0 or iter == n_batches - 1:
             metrics = estimate()
-            print(f"--- step {iter}: {metrics} ---")
+            print(f"\n--- step {iter}: {metrics} ---")
             if iter > save_begin and metrics['val_loss'] < best_loss:
                 best_loss = metrics['val_loss']
                 torch.save(model.state_dict(), f'{model_ckpts}/best_{model_name}.pth')
@@ -110,3 +110,8 @@ for epoch in range(num_epochs):
         pbar.set_description(f"model pretraining, loss: {loss.item():.4f}")
         pbar.update(1)  
 pbar.close()
+
+"""
+model pretraining, loss: 3.4960: 100%|██████████| 32520/32520 [3:54:05<00:00,  2.32batch/s]
+--- step 32500: {'val_loss': 1.4669770944950193, 'test_loss': 1.4505024348817221} ---
+"""
