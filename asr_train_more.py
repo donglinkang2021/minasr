@@ -7,8 +7,6 @@ from vocab.tokenizer import Tokenizer
 from einops import rearrange, repeat
 import numpy as np
 from jiwer import wer
-from pathlib import Path
-from datetime import datetime
 from utils import save_ckpt
 
 vocab_type = 'bpe'

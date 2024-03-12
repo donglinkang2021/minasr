@@ -66,7 +66,6 @@ train_loader = get_loader("train-clean-100", tokenizer, 4, 32)
 val_loader = get_loader("dev-clean", tokenizer, 4, 32)
 test_loader = get_loader("test-clean", tokenizer, 4, 32)
 
-criterion = torch.nn.CTCLoss(blank=0, zero_infinity=True)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 @torch.no_grad()

@@ -1,4 +1,4 @@
-from am.model import *
+from pretrain.model import *
 from tqdm import tqdm
 from asr.datasets import get_loader
 from vocab.tokenizer import Tokenizer

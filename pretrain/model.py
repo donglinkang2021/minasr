@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torchaudio.models import Conformer
+from pretrain.encoder import TransformerEncoder
+from pretrain.mask import get_mask
 from typing import List
+from einops import rearrange
 
 class BaseModel(nn.Module):
     def __init__(self):
@@ -57,15 +60,39 @@ class FeatureExtractor(nn.Module):
                 in_channels = layer_type
         return nn.Sequential(*layers)
 
-class Wav2Vec(BaseModel):
-    def __init__(self, model_dim, features_cfg: List, conformer_kwargs: dict):
+
+
+class MiniHubert(BaseModel):
+    def __init__(self, model_dim, n_class, features_cfg: List, enc_kwargs: dict):
         super().__init__()
-        self.feature_extractor = FeatureExtractor(features_cfg)
-        self.conformer = Conformer(**conformer_kwargs)
-        # self.apply(self._init_weights)
-        print(f"number of parameters of asr model: {self.get_num_params()/1e6:.6f} M ")
     
-    def forward(self, x, x_lengths):
+        self.feature_extractor = FeatureExtractor(features_cfg)
+        self.label_scale = self.feature_extractor.length_scale
+        self.post_extract_proj = nn.Linear(features_cfg[-1], model_dim)
+        self.dropout_features = nn.Dropout(p=0.1, inplace=False)
+        self.final_proj = nn.Linear(model_dim, n_class)
+        self.apply(self._init_weights)
+        self.encoder = TransformerEncoder(**enc_kwargs)
+        print(f"number of parameters of whole model: {self.get_num_params()/1e6:.6f} M ")
+
+    def align_labels(self, T: int, pesudo_label:torch.LongTensor):
+        """ Subsample pesudo_label to match the length of the output of the model """
+        pesudo_label = pesudo_label[:, ::self.label_scale]
+        pesudo_label = pesudo_label[:, :T]
+        return pesudo_label
+    
+    def forward(self, x, x_lengths, pesudo_label=None):
         x, x_lengths = self.feature_extractor(x, x_lengths)
-        x, x_lengths = self.conformer(x, x_lengths)
-        return x, x_lengths
+        x = self.post_extract_proj(x)
+        x = self.dropout_features(x)
+        x = get_mask(x)
+        x = self.encoder(x)
+        logits = self.final_proj(x) # (B,T,vocab_size)
+        if pesudo_label is not None:
+            targets = self.align_labels(x.size(1), pesudo_label) # (B, T)
+            logits = rearrange(logits, 'B T C -> (B T) C')
+            targets = rearrange(targets, 'B T -> (B T)')
+            loss = F.cross_entropy(logits, targets)
+        else:
+            loss = None
+        return logits, x_lengths, loss
