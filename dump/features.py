@@ -9,7 +9,7 @@ SPLITS = [
     "dev-other",
     "test-clean",
     "test-other",
-    # "train-clean-100",
+    "train-clean-100",
     "train-clean-360",
     "train-other-500",
 ]
@@ -17,7 +17,6 @@ SPLITS = [
 DATA_ROOT = "/opt/data/private/linkdom/data/"
 out_root = "/opt/data/private/linkdom/data/pretrain/"
 
-# split = SPLITS[5]
 
 for split in SPLITS:
     out_root = Path(out_root).absolute()
@@ -37,10 +36,3 @@ for split in SPLITS:
         pbar.set_description(f"Processing {sample_id} waveform.shape={waveform.shape} feature.shape={feature.shape}")
         pbar.update(1)
     pbar.close()
-
-"""output
-(GPT) root@asr:~/minasr# python features.py 
-the features will be save at /opt/data/private/linkdom/data/pretrain/fbank80/train-clean-100
-Extracting log mel filter bank features...
-Processing 911-130578-20 waveform.shape=torch.Size([1, 134640]) feature.shape=torch.Size([840, 80]): 100%|█████████████████████████| 28539/28539 [19:14<00:00, 24.71it/s]
-"""

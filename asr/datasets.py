@@ -1,7 +1,6 @@
 import torch
 from torchaudio.datasets import LIBRISPEECH
 from torch.utils.data import Dataset, DataLoader
-from asr.kaldi import FBANK80
 
 SPLITS = [
     "dev-clean",
@@ -14,20 +13,22 @@ SPLITS = [
 ]
 
 DATA_ROOT = "/opt/data/private/linkdom/data/"
+FEAT_ROOT = "/opt/data/private/linkdom/data/pretrain/fbank80"
 
 class LibriSpeechDataset(Dataset):
     def __init__(self, split: str, tokenizer):
         self.split = split
         self.data = LIBRISPEECH(root = DATA_ROOT, url = split, download = False)
+        self.feature_root =  f"{FEAT_ROOT}/{split}"
         self.tokenizer = tokenizer
-        self.transform = FBANK80()
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        waveform, _, utterance, _, _, _ = self.data[idx]
-        feature = self.transform(waveform)
+        _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
+        feature_path = f"{self.feature_root}/{spk_id}-{chapter_no}-{utt_no}.pt"
+        feature = torch.load(feature_path)
         token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
         return feature, token
 
