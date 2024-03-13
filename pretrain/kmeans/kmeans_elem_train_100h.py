@@ -50,3 +50,9 @@ pbar.close()
 print("Kmeans training finished.")
 print("Saving the kmeans model...")
 joblib.dump(kmeans, f"{km_path}/kmeans_{n_clusters}")
+
+"""output
+Processed 28538 sample, inertia: 23.0962890625: 100%|███████████████████████████████████████████| 28539/28539 [15:30<00:00, 30.66batch/s]
+Kmeans training finished.
+Saving the kmeans model...
+"""
