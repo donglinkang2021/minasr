@@ -14,12 +14,15 @@ SPLITS = [
 
 DATA_ROOT = "/opt/data/private/linkdom/data/"
 FEAT_ROOT = "/opt/data/private/linkdom/data/pretrain/fbank80"
+LAB_ROOT = "/opt/data/private/linkdom/data/pretrain/lab"
 
 class LibriSpeechDataset(Dataset):
-    def __init__(self, split: str, tokenizer):
+    def __init__(self, split: str, tokenizer, use_pesudo_label = False):
         self.split = split
         self.data = LIBRISPEECH(root = DATA_ROOT, url = split, download = False)
         self.feature_root =  f"{FEAT_ROOT}/{split}"
+        self.use_pesudo_label = use_pesudo_label
+        self.label_root = f"{LAB_ROOT}/{split}"
         self.tokenizer = tokenizer
 
     def __len__(self):
@@ -27,9 +30,14 @@ class LibriSpeechDataset(Dataset):
 
     def __getitem__(self, idx):
         _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
-        feature_path = f"{self.feature_root}/{spk_id}-{chapter_no}-{utt_no}.pt"
+        sample_id = f"{spk_id}-{chapter_no}-{utt_no}"
+        feature_path = f"{self.feature_root}/{sample_id}.pt"
         feature = torch.load(feature_path)
-        token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
+        if self.use_pesudo_label:
+            label_path = f"{self.label_root}/{sample_id}.pt"
+            token = torch.load(label_path)
+        else:   
+            token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
         return feature, token
 
 
