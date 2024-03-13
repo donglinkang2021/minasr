@@ -38,3 +38,10 @@ for split in SPLITS:
         pbar.set_description(f"Dumping kmeans label for {split} for {sample_id}")
         pbar.update(1)
     pbar.close()
+
+
+"""
+Dumping kmeans label for train-clean-100 for 911-130578-20: 100%|██████████| 28539/28539 [22:16<00:00, 21.35it/s]
+Dumping kmeans label for train-clean-360 for 986-129388-112: 100%|██████████| 104014/104014 [1:54:46<00:00, 15.10it/s]
+Dumping kmeans label for train-other-500 for 985-126228-51: 100%|██████████| 148688/148688 [3:07:26<00:00, 13.22it/s]
+"""
