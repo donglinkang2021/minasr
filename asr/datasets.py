@@ -17,7 +17,7 @@ FEAT_ROOT = "/opt/data/private/linkdom/data/pretrain/fbank80"
 LAB_ROOT = "/opt/data/private/linkdom/data/pretrain/lab"
 
 class LibriSpeechDataset(Dataset):
-    def __init__(self, split: str, tokenizer, use_pesudo_label = False):
+    def __init__(self, split: str, tokenizer, use_pesudo_label: bool):
         self.split = split
         self.data = LIBRISPEECH(root = DATA_ROOT, url = split, download = False)
         self.feature_root =  f"{FEAT_ROOT}/{split}"
@@ -63,7 +63,7 @@ def collate_fn(batch):
     return data, target, data_lengths, target_lengths
 
 
-def get_loader(split: str, tokenizer, num_workers, batch_size: int, shuffle: bool = True):
-    dataset = LibriSpeechDataset(split, tokenizer)
+def get_loader(split: str, tokenizer, num_workers: int, batch_size: int, shuffle: bool = True, use_pesudo_label: bool = False):
+    dataset = LibriSpeechDataset(split, tokenizer, use_pesudo_label)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers, collate_fn=collate_fn)
     return dataloader
