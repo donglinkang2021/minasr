@@ -7,6 +7,7 @@ from pretrain.mask import get_mask
 from pretrain.kmeans.codebooks import load_codebooks
 from typing import List
 from einops import rearrange
+import math
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -73,16 +74,22 @@ class MiniHubert(BaseModel):
         self.post_extract_proj = nn.Linear(features_cfg[-1], model_dim)
         self.dropout_features = nn.Dropout(p=0.1, inplace=False)
         self.final_proj = nn.Linear(model_dim, features_cfg[0])
+        self.final_ln = nn.LayerNorm(features_cfg[0])
         self.codebooks = load_codebooks(n_class).requires_grad_(False).to(device)
         self.apply(self._init_weights)
         self.encoder = TransformerEncoder(**enc_kwargs)
         print(f"number of parameters of whole model: {self.get_num_params()/1e6:.6f} M ")
 
-    def align_labels(self, pesudo_label:torch.LongTensor):
+    def align_labels(self, T:int, pesudo_label:torch.LongTensor):
         """ Subsample pesudo_label to match the length of the output of the model """
         target_inds = torch.arange(0, pesudo_label.size(1), self.label_scale)
         targets = pesudo_label[:, target_inds]
+        targets = targets[:, :T]
         return targets
+    
+    def attention(self, logits):
+        attention = logits @ self.codebooks.T / math.sqrt(logits.size(-1))
+        return attention
     
     def forward(self, x, x_lengths, pesudo_label=None):
         x, x_lengths = self.feature_extractor(x, x_lengths)
@@ -91,11 +98,13 @@ class MiniHubert(BaseModel):
         x = get_mask(x)
         x = self.encoder(x)
         logits = self.final_proj(x) # (B,T,features_cfg[0])
+        logits = self.final_ln(logits)
         if pesudo_label is not None:
-            logits = logits.unsqueeze(2) # (B, T, 1, features_cfg[0])
-            logits = F.cosine_similarity(logits, self.codebooks, dim = -1) / 0.1 # (B, T, n_class)
+            # logits = logits.unsqueeze(2) # (B, T, 1, features_cfg[0])
+            # logits = F.cosine_similarity(logits, self.codebooks, dim = -1) / 0.1 # (B, T, n_class) # this func will let the GPU memory explode
+            logits = self.attention(logits)
+            targets = self.align_labels(logits.size(1), pesudo_label) # (B, T)
             logits = rearrange(logits, 'B T C -> (B T) C')
-            targets = self.align_labels(pesudo_label) # (B, T)
             targets = rearrange(targets, 'B T -> (B T)')
             loss = F.cross_entropy(logits, targets)
         else:

@@ -15,13 +15,20 @@ SPLITS = [
 DATA_ROOT = "/opt/data/private/linkdom/data/"
 FEAT_ROOT = "/opt/data/private/linkdom/data/pretrain/fbank80"
 LAB_ROOT = "/opt/data/private/linkdom/data/pretrain/lab"
+sample_id_root = "/opt/data/private/linkdom/data/pretrain/sample_id"
 
 class LibriSpeechDataset(Dataset):
     def __init__(self, split: str, tokenizer, use_pesudo_label: bool):
         self.split = split
-        self.data = LIBRISPEECH(root = DATA_ROOT, url = split, download = False)
-        self.feature_root =  f"{FEAT_ROOT}/{split}"
+        if use_pesudo_label == False:
+            self.data = LIBRISPEECH(root = DATA_ROOT, url = split, download = False)
+        else:
+            sample_id_path = f"{sample_id_root}/{split}.txt"
+            with open(sample_id_path, "r") as f:
+                sample_id_context = f.read()
+            self.data = sample_id_context.strip().split("\n")
         self.use_pesudo_label = use_pesudo_label
+        self.feature_root = f"{FEAT_ROOT}/{split}"
         self.label_root = f"{LAB_ROOT}/{split}"
         self.tokenizer = tokenizer
 
@@ -29,16 +36,18 @@ class LibriSpeechDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
-        sample_id = f"{spk_id}-{chapter_no}-{utt_no}"
+        # _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
+        # sample_id = f"{spk_id}-{chapter_no}-{utt_no}"
+        # feature_path = f"{self.feature_root}/{sample_id}.pt"
+        # feature = torch.load(feature_path)
+        # token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
+        
+        sample_id = self.data[idx]
         feature_path = f"{self.feature_root}/{sample_id}.pt"
         feature = torch.load(feature_path)
-        if self.use_pesudo_label:
-            label_path = f"{self.label_root}/{sample_id}.pt"
-            token = torch.load(label_path)
-        else:   
-            token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
-        return feature, token
+        label_path = f"{self.label_root}/{sample_id}.pt"
+        label = torch.load(label_path)
+        return feature, label
 
 
 def collate_fn(batch):

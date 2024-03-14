@@ -29,8 +29,8 @@ loader_kwargs = {
 enc_kwargs = {
     "n_embd": model_dim,
     "n_head": 6,
-    "n_layer": 8,
-    "block_size": 2048,
+    "n_layer": 12,
+    "block_size": 512,
     "dropout": 0.1
 }
 
