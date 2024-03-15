@@ -1,8 +1,5 @@
-from torchaudio.datasets import LIBRISPEECH
-from asr.kaldi import FBANK80
 from tqdm import tqdm
 from pathlib import Path
-import torch
 
 SPLITS = [
     "train-clean-100",
@@ -28,3 +25,13 @@ sample_id_path = sample_id_root / f"libri960.txt"
 with open(sample_id_path, "w") as f:
     f.write(sample_id_context)
 print(f"sample id for whole dataset has been saved at {sample_id_path}")
+
+"""
+100%|██████████| 28539/28539 [00:00<00:00, 2057889.21it/s]
+sample id for train-clean-100 has been read
+100%|██████████| 104014/104014 [00:00<00:00, 1574678.80it/s]
+sample id for train-clean-360 has been read
+100%|██████████| 148688/148688 [00:00<00:00, 2281121.58it/s]
+sample id for train-other-500 has been read
+sample id for whole dataset has been saved at /opt/data/private/linkdom/data/pretrain/sample_id/libri960.txt
+"""

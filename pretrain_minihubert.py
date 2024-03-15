@@ -2,6 +2,7 @@ from pretrain.model import MiniHubert
 import torch
 import joblib
 from asr.datasets import get_loader
+from pretrain.datasets import get_libri960_loader
 from vocab.tokenizer import Tokenizer
 from tqdm import tqdm
 import numpy as np
@@ -18,11 +19,14 @@ features_kwargs = {
     "demo0": [80, "M", 128, "M", 256, 256, "M", 512]
 }
 
+
+batch_size = 64
+num_workers = 4
 device = "cuda" if torch.cuda.is_available() else "cpu"
 loader_kwargs = {
     "tokenizer": tokenizer,
-    "batch_size": 64,
-    "num_workers": 4,
+    "batch_size": batch_size,
+    "num_workers": num_workers,
     "use_pesudo_label": True
 }
 
@@ -53,7 +57,7 @@ print(f"the model checkpoints will be saved at {model_ckpts}.")
 model = MiniHubert(**model_cfg).to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-trainloader = get_loader("train-clean-360", **loader_kwargs)
+trainloader = get_libri960_loader(num_workers, batch_size)
 valloader = get_loader("dev-clean", **loader_kwargs)
 testloader = get_loader("test-clean", **loader_kwargs)
 
