@@ -6,3 +6,4 @@
     - [x] train with 360h 20 epochs 2 times
 - [x] try wav2vec 2.0 pretrain-finetune architecture
 - [x] refer to simple_kmeans and extract the feature and label first
+- [ ] use whole libri960 to pretrain the model
