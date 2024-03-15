@@ -3,8 +3,9 @@ with open("nohup.out", "r", encoding="utf-8") as file:
     data = file.read()
     file_size = len(data) / 1024 / 1024
     print(f"nohup.out size: {file_size:.2f} MB")
-    data = data.split("\n")
-    print(data[-2])
+    data = data.strip().split("\n")
+    print(data[-3])
+    print(data[-1])
 
 """output
 (GPT) root@asr:~/minasr# python read_nohup.py 

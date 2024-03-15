@@ -96,3 +96,9 @@ for epoch in range(num_epochs):
         pbar.set_description(f"model pretraining, loss: {loss.item():.4f}")
         pbar.update(1)  
 pbar.close()
+
+"""
+360h for 20 epochs
+model pretraining, loss: 0.7904: 100%|██████████| 32520/32520 [3:32:16<00:00,  2.55batch/s]
+--- step 32500: {'val_loss': 0.37078154156374377, 'test_loss': 0.3747436447841365} ---
+"""
