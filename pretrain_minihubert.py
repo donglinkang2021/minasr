@@ -1,6 +1,5 @@
 from pretrain.model import MiniHubert
 import torch
-import joblib
 from asr.datasets import get_loader
 from pretrain.datasets import get_libri960_loader
 from vocab.tokenizer import Tokenizer
@@ -46,7 +45,7 @@ model_cfg = {
 }
 
 # train config
-num_epochs = 20
+num_epochs = 40
 eval_interval = 500
 save_begin = 1000
 learning_rate = 3e-4
@@ -58,9 +57,15 @@ model = MiniHubert(**model_cfg).to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 trainloader = get_libri960_loader(num_workers, batch_size)
+n_batches = len(trainloader)
 valloader = get_loader("dev-clean", **loader_kwargs)
 testloader = get_loader("test-clean", **loader_kwargs)
 
+scheduler = torch.optim.lr_scheduler.OneCycleLR(
+    optimizer, max_lr=learning_rate, 
+    epochs=num_epochs, steps_per_epoch=n_batches, 
+    pct_start=0.08, anneal_strategy='linear' # 'cos'
+)
 
 @torch.no_grad()
 def estimate():
@@ -77,9 +82,10 @@ def estimate():
     return metrics
 
 best_loss = 100
-n_batches = len(trainloader)
+print(f"num_epochs: {num_epochs}")
 print(f"number of batches per epoch: {n_batches}")
 print(f"train loader kwargs: {loader_kwargs}")
+print(f"model config: {model_cfg}")
 pbar = tqdm(total=num_epochs * n_batches, desc="model pretraining", leave=True, unit="batch")
 for epoch in range(num_epochs):
     for i, (x, y, lx, _) in enumerate(trainloader):
@@ -97,6 +103,8 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
+        scheduler.step()
+
         pbar.set_description(f"model pretraining, loss: {loss.item():.4f}")
         pbar.update(1)  
 pbar.close()
@@ -105,4 +113,7 @@ pbar.close()
 360h for 20 epochs
 model pretraining, loss: 0.7904: 100%|██████████| 32520/32520 [3:32:16<00:00,  2.55batch/s]
 --- step 32500: {'val_loss': 0.37078154156374377, 'test_loss': 0.3747436447841365} ---
+960h for 20 epochs
+model pretraining, loss: 0.6845: 100%|██████████| 87900/87900 [13:31:48<00:00,  1.80batch/s]
+--- step 87500: {'val_loss': 0.3126602831274964, 'test_loss': 0.32558063799288217} ---
 """
