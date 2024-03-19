@@ -6,7 +6,7 @@ from asr.datasets import get_loader
 from asr.model import ConformerCTC
 from vocab.tokenizer import Tokenizer
 import numpy as np
-from utils import save_ckpt
+from utils import save_ckpt, get_previous_ckpt
 from torchaudio.models.decoder import cuda_ctc_decoder
 from jiwer import wer
 
@@ -54,7 +54,7 @@ modelctc_kwargs = {
 }
 
 # train config
-num_epochs = 10
+num_epochs = 20
 eval_interval = 500
 save_begin = 1000
 learning_rate = 3e-4
@@ -69,13 +69,23 @@ model = ConformerCTC(**modelctc_kwargs).to(device)
 print(f"number of parameters of asr model: {model.get_num_params()/1e6:.6f} M ")
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-model_name = f"asr_conformer"
+
+model_name = f"asr_conformer_ctc_{vocab_type}"
+
+# prev_ckpt_path = get_previous_ckpt(model_name)
+# checkpoint = torch.load(f"{prev_ckpt_path}/best_{model_name}.pth")
+# model.load_state_dict(checkpoint['model'])
+# optimizer.load_state_dict(checkpoint['optimizer'])
+# print(f"the pretrained model checkpoints has loaded from {prev_ckpt_path}.")
+
 model_ckpts = save_ckpt(model_name)
-print(f"the model checkpoints will be saved at {model_ckpts}.")
+print(f"new model checkpoints will be saved at {model_ckpts}.")
 
 cuda_decoder = cuda_ctc_decoder(tokens, nbest=nbest, beam_size=beam_size, blank_skip_threshold=blank_skip_threshold)
 
 trainloader = get_loader("train-clean-100", **loader_kwargs)
+# trainloader = get_loader("train-clean-360", **loader_kwargs)
+# trainloader = get_loader("train-other-500", **loader_kwargs)
 valloader = get_loader("dev-clean", **loader_kwargs)
 testloader = get_loader("test-clean", **loader_kwargs)
 
@@ -119,7 +129,11 @@ for epoch in range(num_epochs):
             print(f"\n--- step {iter}: {metrics} ---")
             if iter > save_begin and metrics['val_loss'] < best_loss:
                 best_loss = metrics['val_loss']
-                torch.save(model.state_dict(), f'{model_ckpts}/best_{model_name}.pth')
+                torch.save({
+                    'model': model.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'metrics': metrics
+                }, f'{model_ckpts}/best_{model_name}.pth')
          
         x, y, lx, ly = x.to(device), y.to(device), lx.to(device), ly.to(device)
         logits, l_logits = model(x, lx)
@@ -134,3 +148,15 @@ for epoch in range(num_epochs):
         pbar.set_description(f"model training, loss: {loss.item():.4f}")
         pbar.update(1)  
 pbar.close()
+
+
+"""output
+
+100h 10epoch
+model training, loss: 0.5508: 100%|██████████| 4460/4460 [33:39<00:00,  2.21batch/s]
+
+utterances[0]: little by little however the latter became hemmed and bound in the meshes of the various devices and proceedings which the territorial officials evolved from the bogus laws
+transcipts[0]: little by little however the latter became him and bound in the mashes of the variousy vices andperceedings which the terracorialicials ofvolved from the bgest laws
+
+--- step 4459: {'val_loss': 1.2039379740870275, 'val_wer': 0.4090909090909091, 'test_loss': 1.2206474571693233, 'test_wer': 0.3626760563380282} ---
+"""
