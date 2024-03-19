@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from torchaudio.models import Conformer
 from pretrain.encoder import TransformerEncoder
 from pretrain.mask import get_mask
 from pretrain.kmeans.codebooks import load_codebooks

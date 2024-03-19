@@ -35,7 +35,7 @@ for sample in range(N):
     for i in range(nbest):
         transcript = tokenizer.decode(results[sample][i].tokens).lower()
         score = results[0][i].score
-        print(f"sample {sample}, nbest {i}, transcript: {transcript}, score: {score}")
+        print(f"sample {sample}, nbest {i}, transcript: {transcript}, score: {score}, words: {words}")
 
 """
 (GPT) root@asr:~/minasr# python ctcdecode.py 

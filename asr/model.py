@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torchaudio.models import Conformer
-import torchvision.models as models
 from lm.model import GPT
 from typing import List
 from einops import rearrange
@@ -62,7 +61,14 @@ class FeatureExtractor(nn.Module):
         return nn.Sequential(*layers)
 
 class NOCTCModel(ASRModel):
-    def __init__(self, features_cfg: List, conformer_kwargs, gpt_kwargs, is_lm_pretrained: bool = True, dropout: float = 0.2):
+    def __init__(
+        self, 
+        features_cfg: List, 
+        conformer_kwargs: dict, 
+        gpt_kwargs: dict, 
+        is_lm_pretrained: bool = True, 
+        dropout: float = 0.2
+    ):
         super().__init__()
         self.features = FeatureExtractor(features_cfg)
         self.conformer = Conformer(**conformer_kwargs)
@@ -147,3 +153,21 @@ class NOCTCModel(ASRModel):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
+    
+class ConformerCTC(ASRModel):
+    def __init__(self, features_cfg: List, conformer_kwargs: dict, vocab_size: int):
+        super().__init__()
+        model_dim = conformer_kwargs["input_dim"]
+        features_dim = features_cfg[-1]
+        self.features = FeatureExtractor(features_cfg)
+        self.post_features = nn.Linear(features_dim, model_dim)
+        self.conformer = Conformer(**conformer_kwargs)
+        self.head = nn.Linear(model_dim, vocab_size)
+        # self.apply(self._init_weights)
+    
+    def forward(self, x: torch.Tensor, x_lengths: torch.Tensor):
+        x, x_lengths = self.features(x, x_lengths)
+        x = self.post_features(x)
+        x, x_lengths = self.conformer(x, x_lengths)
+        x = self.head(x)
+        return x, x_lengths
