@@ -36,17 +36,17 @@ class LibriSpeechDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        # _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
-        # sample_id = f"{spk_id}-{chapter_no}-{utt_no}"
-        # feature_path = f"{self.feature_root}/{sample_id}.pt"
-        # feature = torch.load(feature_path)
-        # token = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
-        
-        sample_id = self.data[idx]
+        _, _, utterance, spk_id, chapter_no, utt_no = self.data[idx]
+        sample_id = f"{spk_id}-{chapter_no}-{utt_no}"
         feature_path = f"{self.feature_root}/{sample_id}.pt"
         feature = torch.load(feature_path)
-        label_path = f"{self.label_root}/{sample_id}.pt"
-        label = torch.load(label_path)
+        label = torch.LongTensor(self.tokenizer.encode(utterance.lower()))
+        
+        # sample_id = self.data[idx]
+        # feature_path = f"{self.feature_root}/{sample_id}.pt"
+        # feature = torch.load(feature_path)
+        # label_path = f"{self.label_root}/{sample_id}.pt"
+        # label = torch.load(label_path)
         return feature, label
 
 

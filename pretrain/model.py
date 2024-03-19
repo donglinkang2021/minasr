@@ -98,11 +98,9 @@ class MiniHubert(BaseModel):
         x = get_mask(x)
         x = self.encoder(x)
         logits = self.final_proj(x) # (B,T,features_cfg[0])
-        logits = self.final_ln(logits)
         if pesudo_label is not None:
-            # logits = logits.unsqueeze(2) # (B, T, 1, features_cfg[0])
-            # logits = F.cosine_similarity(logits, self.codebooks, dim = -1) / 0.1 # (B, T, n_class) # this func will let the GPU memory explode
-            logits = self.attention(logits)
+            logits = self.final_ln(logits)
+            logits = self.attention(logits) # F.cosine_similarity will let the GPU memory explode
             targets = self.align_labels(logits.size(1), pesudo_label) # (B, T)
             logits = rearrange(logits, 'B T C -> (B T) C')
             targets = rearrange(targets, 'B T -> (B T)')
@@ -110,3 +108,25 @@ class MiniHubert(BaseModel):
         else:
             loss = None
         return logits, x_lengths, loss
+
+    def freeze(self):
+        # freeze the model parameters except the final projection layer
+        for param in self.parameters():
+            param.requires_grad = False
+        for param in self.final_proj.parameters():
+            param.requires_grad = True
+    
+class LinearHead(nn.Module):
+    def __init__(self, model_dim, vocab_size):
+        super().__init__()
+        self.proj = nn.Linear(model_dim, vocab_size)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+
+    def forward(self, x):
+        return self.proj(x)
