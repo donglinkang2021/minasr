@@ -3,6 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from einops import rearrange
 import math
+import pytorch_lightning as L
 
 class CausalSelfAttention(nn.Module):
     def __init__(self, n_embd, n_head, head_size, block_size, dropout):
@@ -100,21 +101,6 @@ class GPT(nn.Module):
             if pn.endswith('c_proj.weight'):
                 torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * n_layer))
 
-        # report number of parameters
-        print(f"number of parameters of lm: {self.get_num_params()/1e6:.6f} M ")
-
-    def get_num_params(self, non_embedding=True):
-        """
-        Return the number of in the model.
-        For non-embedding count (default), the position embeddings get subtracted.
-        The token embeddings would too, except due to the parameter sharing these
-        params are actually used as weights in the final layer, so we include them.
-        """
-        n_params = sum(p.numel() for p in self.parameters())
-        if non_embedding:
-            n_params -= self.transformer.wpe.weight.numel()
-        return n_params
-
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
@@ -123,12 +109,11 @@ class GPT(nn.Module):
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, idx, targets=None):
+    def forward(self, idx):
         device = idx.device
         B, T = idx.shape
         assert T <= self.block_size, f"Cannot forward sequence of length {T}, block size is only {self.block_size}"
         pos = torch.arange(0, T, dtype=torch.long, device=device) # shape (t)
-
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (B, T, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (T, n_embd)
@@ -136,25 +121,17 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
+        return x
         
-        if targets is None:
-            logits = self.lm_head(x[:, [-1], :]) # note: using list [-1] to preserve the time dim
-            loss = None
-        else:
-            logits = self.lm_head(x) # (B,T,vocab_size)
-            logits = rearrange(logits, 'B T C -> (B T) C')
-            targets = rearrange(targets, 'B T -> (B T)')
-            loss = F.cross_entropy(logits, targets)
-
-        return logits, loss
-
-    def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(self, idx, max_new_tokens:int, temperature=1.0, top_k=None):
         # idx is (B, T) array of indices in the current context
         for _ in range(max_new_tokens):
             # crop idx to the last block_size tokens
             idx_cond = idx[:, -self.block_size:]
             # get the predictions
-            logits, _ = self(idx_cond)
+            logits = self(idx_cond)
+             # note: using list [-1] to preserve the time dim
+            logits = self.lm_head(logits[:, [-1], :])
             # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / temperature
             # optionally crop the logits to only the top k options
@@ -168,3 +145,47 @@ class GPT(nn.Module):
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx
+
+class LibriGPT(L.LightningModule):
+    def __init__(self, tokenizer, gpt_kwargs:dict, sample_kwargs:dict, learning_rate):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = GPT(**gpt_kwargs)
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, idx):
+        return self.model(idx)
+
+    def training_step(self, batch, batch_idx):
+        loss = self._common_step(batch, batch_idx)
+        self.log('train_loss', loss, sync_dist=True, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        loss = self._common_step(batch, batch_idx)
+        self.log('val_loss', loss, sync_dist=True, logger=True)
+        self.inference()        
+        return loss
+    
+    def test_step(self, batch, batch_idx):
+        loss = self._common_step(batch, batch_idx)
+        self.log('test_loss', loss, sync_dist=True, logger=True)
+        self.inference()
+        return loss
+    
+    def _common_step(self, batch, batch_idx):
+        x, targets = batch
+        x = self.model(x)
+        logits = self.model.lm_head(x) # (B,T,vocab_size)
+        logits = rearrange(logits, 'B T C -> (B T) C')
+        targets = rearrange(targets, 'B T -> (B T)')
+        loss = self.loss_fn(logits, targets)
+        return loss
+    
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.model.parameters(), lr=self.hparams.learning_rate)
+    
+    def inference(self):
+        context = torch.tensor([self.hparams.tokenizer.spm.bos_id()], dtype=torch.long, device=self.device).unsqueeze(0)
+        text = self.hparams.tokenizer.decode(self.model.generate(context, **self.hparams.sample_kwargs)[0].tolist())
+        self.logger.experiment.add_text('generated_text', text, self.global_step)

@@ -1,0 +1,1 @@
+nohup python lm_train_lightning.py > logs/lm_train_lightning.log &
