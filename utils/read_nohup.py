@@ -1,15 +1,18 @@
-# we print the nohup.out file here, because the file is too large to `cat` in the terminal
-with open("nohup.out", "r", encoding="utf-8") as file:
-    data = file.read()
-    file_size = len(data) / 1024 / 1024
-    print(f"nohup.out size: {file_size:.2f} MB")
-    data = data.strip().split("\n")
-    print("\n".join(data[:10]))
-    print("\n".join(data[-10:]))
-    # print(data[-1])
+import argparse
 
-"""output
-(GPT) root@asr:~/minasr# python read_nohup.py 
-nohup.out size: 46.18 MB
-Dumping kmeans label for train-other-500 for 985-126228-51: 100%|██████████| 148688/148688 [3:07:26<00:00, 13.22it/s]
-"""
+def read_nohup(file_path: str, head: int = 10, tail: int = 10):
+    with open(file_path, "r", encoding="utf-8") as file:
+        data = file.read()
+        file_size = len(data) / 1024 / 1024
+        print(f"nohup.out size: {file_size:.2f} MB")
+        data = data.strip().split("\n")
+        print("\n".join(data[:head]))
+        print("\n".join(data[-tail:]))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--file_path", type=str, default="nohup.out")
+    parser.add_argument("--head", type=int, default=10)
+    parser.add_argument("--tail", type=int, default=10)
+    args = parser.parse_args()
+    read_nohup(args.file_path, args.head, args.tail)
